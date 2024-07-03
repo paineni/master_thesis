@@ -1,0 +1,268 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Debug Tests",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "purpose": [
+                "debug-test"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "Annotation (Prod) - Download manual labeling on extracted patches",
+            "type": "python",
+            "request": "launch",
+            "program": "cocoa_detection/dataset_preparation/pipeline.py",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "./"
+            },
+            "args": [
+                "download-classification-annotation-run",
+                "data/datasets/classification_cuttest_detection/",
+                "--no-db",
+                "--classes-file",
+                "data/raw/classes.txt",
+                "--labeling-backend",
+                "custom_labelstudio_prod",
+                "--download-incomplete",
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "Annotation - Extract Patches",
+            "type": "python",
+            "request": "launch",
+            "program": "cocoa-detection/cocoa_detection/dataset_preparation/annotation_pipeline.py",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "extract-patches",
+                "data/datasets/merged",
+                "data/datasets/classification",
+                "--no-db"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Annotation - Manual Localization Labeling Upload",
+            "type": "python",
+            "request": "launch",
+            "program": "cocoa_detection/dataset_preparation/pipeline.py",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "./"
+            },
+            "args": [
+                "upload-localization-annotation-run",
+                "data/datasets/cuttest_detection/",
+                "--no-db",
+                "--classes-file",
+                "data/raw/cuttest_localization_classes.txt",
+                "--labeling-backend",
+                "local_labelstudio",
+                "--max-chunksize",
+                "10"
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "Annotation - Manual Localization Labeling Download",
+            "type": "python",
+            "request": "launch",
+            "program": "cocoa_detection/dataset_preparation/pipeline.py",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "./"
+            },
+            "args": [
+                "download-localization-annotation-run",
+                "data/datasets/cuttest_detection/",
+                "--no-db",
+                "--labeling-backend",
+                "local_labelstudio"
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "Annotation - Manual Classification Labeling",
+            "type": "python",
+            "request": "launch",
+            "program": "cocoa_detection/dataset_preparation/pipeline.py",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "./"
+            },
+            "args": [
+                "classification-labeling",
+                "data/datasets/classification/",
+                "--no-db",
+                "--classes-file",
+                "data/raw/classes.txt",
+                "--labeling-backend",
+                "custom_labelstudio",
+                "--max-chunksize",
+                "100"
+            ]
+        },
+        {
+            "name": "Cuttest Image Classification - Data Provider",
+            "type": "python",
+            "request": "launch",
+            "program": "../../cocoa_detection/input_pipeline/stages/single_beans/data_provider.py",
+            "cwd": "${workspaceFolder}/pipelines/image_classification",
+            "env": {
+                "PYTHONPATH": "../../"
+            },
+            "args": [
+                "../../data/datasets/classification_cuttest_detection",
+                "data/prepared",
+            ]
+        },
+        {
+            "name": "Debug Cut-Test Image Classification: Training Stage",
+            "type": "python",
+            "request": "launch",
+            "program": "../../cocoa_detection/cli.py",
+            "cwd": "${workspaceFolder}/pipelines/image_classification/",
+            "env": {
+                "PYTHONPATH": "../../"
+            },
+            "envFile": "${workspaceFolder}/.env",
+            "args": [
+                "train",
+                "data/augmented",
+                "training_results",
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "Debug Cut-Test Image Classification (Binary Classifier Ensemble): Training Stage",
+            "type": "python",
+            "request": "launch",
+            "program": "../../cocoa_detection/cuttest_binary_classification_ensemble.py",
+            "cwd": "${workspaceFolder}/pipelines/cuttest_binary_classification_ensemble/",
+            "env": {
+                "PYTHONPATH": "../../"
+            },
+            "envFile": "${workspaceFolder}/.env",
+            "args": [
+                "train",
+                "data/augmented",
+                "training_results",
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "Debug Cut-Test Image Classification: Evaluation Stage",
+            "type": "python",
+            "request": "launch",
+            "program": "../../cocoa_detection/cli.py",
+            "cwd": "${workspaceFolder}/pipelines/image_classification",
+            "env": {
+                "PYTHONPATH": "../../"
+            },
+            "envFile": "${workspaceFolder}/.env",
+            "args": [
+                "evaluate-model",
+                "data/augmented",
+                "data/evaluation_results",
+                "--model-file",
+                "training_results/models/CocoaBeansClassificationModel.keras",
+                "--model-attributes-file",
+                "training_results/attributes/CocoaBeansClassificationModel.json",
+                "--eval-name",
+                "debug"
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "Debug Darknet Model Evaluation",
+            "type": "python",
+            "request": "launch",
+            "program": "../../cocoa_detection/detection.py",
+            "cwd": "${workspaceFolder}/pipelines/object_detection/",
+            "env": {
+                "PYTHONPATH": "../../"
+            },
+            "envFile": "${workspaceFolder}/.env",
+            "args": [
+                "--export-dir",
+                "data/eval/dataset_with_predictions",
+                "--dataset",
+                "data/prepared",
+                "--eval",
+                "--artifacts-path",
+                "data/eval/",
+                "-w",
+                "training/darknet_yolov4/backup/custom-yolov4-detector_best.weights",
+                "darknet",
+                "-d",
+                "training/darknet_yolov4",
+                "-y",
+                "training/darknet_yolov4/custom-yolov4-detector.cfg",
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "Debug Data Provider",
+            "type": "python",
+            "request": "launch",
+            "program": "../../cocoa_detection/input_pipeline/stages/data_provider.py",
+            "cwd": "${workspaceFolder}/pipelines/object_detection/",
+            "env": {
+                "PYTHONPATH": "../../"
+            },
+            "envFile": "${workspaceFolder}/.env",
+            "args": [
+                "../../data/datasets/cuttest_detection",
+                "data/prepared/"
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "Cuttest Image Classification - Inference on Dataset",
+            "type": "python",
+            "request": "launch",
+            "program": "cocoa_detection/cli.py",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "./"
+            },
+            "args": [
+                "classify-dataset",
+                "--model-file",
+                "pipelines/image_classification/training_results/models/CocoaBeansClassificationModel.keras",
+                "--model-attributes-file",
+                "pipelines/image_classification/training_results/attributes/CocoaBeansClassificationModel.json",
+                "--no-db",
+                "--dataset-id",
+                "data/datasets/classification_cuttest_detection"
+            ]
+        },
+        {
+            "name": "Prediction Service - REST API",
+            "type": "python",
+            "request": "launch",
+            "module": "flask",
+            "env": {
+                "FLASK_APP": "app.backend.prediction_service:create_app()",
+                "FLASK_DEBUG": "1",
+                "FLASK_RUN_PORT": "5000"
+            },
+            "args": [
+                "run",
+                "--no-debugger"
+            ],
+            "jinja": true,
+            "justMyCode": false
+        },
+    ]
+}

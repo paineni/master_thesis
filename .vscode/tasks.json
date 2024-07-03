@@ -1,0 +1,59 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Mongodb: start",
+            "type": "shell",
+            "command": "export $(xargs < .env) && $(dirname ${command:python.interpreterPath})/mongod --port $MONGODB_PORT --dbpath .data/mongodb",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new",
+                "showReuseMessage": true,
+                "clear": false
+            },
+        },
+        {
+            "label": "Labelstudio: testing",
+            "type": "shell",
+            "command": "export $(xargs < .env) && $(dirname $$LABELSTUDIO_EXECUTABLE start --port 18085",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new",
+                "showReuseMessage": true,
+                "clear": false
+            },
+        },
+        {
+            "label": "Labelstudio: dev",
+            "type": "shell",
+            "command": "export $(xargs < .env) && $LABELSTUDIO_EXECUTABLE start --port $LABELSTUDIO_PORT",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new",
+                "showReuseMessage": true,
+                "clear": false
+            },
+        },
+        {
+            "label": "Delete all projects from Labelstudio",
+            "type": "shell",
+            "command": "export $(xargs < .env) ; for i in {0..10000}; do echo $i; curl -X DELETE http://localhost:$LABELSTUDIO_PORT/api/projects/$i -H \"Authorization: Token $FIFTYONE_LABELSTUDIO_API_KEY\" || true; done",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new",
+                "showReuseMessage": true,
+                "clear": false
+            },
+        }
+    ]
+}
