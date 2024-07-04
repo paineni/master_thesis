@@ -24,6 +24,7 @@ from utils import (
     save_checkpoint,
     load_checkpoint,
     process_images_with_bboxes,
+    filter_bboxes,
 )
 from loss import YoloLoss
 
@@ -97,8 +98,8 @@ def train_fn(
     loop = tqdm(train_loader, leave=True)
     mean_loss = []
 
-    for batch_idx, (z, x, y) in enumerate(loop):
-        x, y, z = x.to(DEVICE), y.to(DEVICE), z.to(DEVICE)
+    for batch_idx, (z, x, y, w) in enumerate(loop):
+        x, y, z, w = x.to(DEVICE), y.to(DEVICE), z.to(DEVICE), w.to(DEVICE)
 
         optimizer.zero_grad()
         out = model(x)
@@ -116,9 +117,13 @@ def train_fn(
             )
             if bboxes2 is None or len(bboxes2) == 0:
                 continue
+            else:
+                filtered_bboxes = filter_bboxes(w[idx], bboxes2)
+            if filtered_bboxes is None or len(filtered_bboxes) == 0:
+                continue
             cropped_images, labels = process_images_with_bboxes(
                 z[idx],
-                bboxes2,
+                filtered_bboxes,
                 output_size=(224, 224),
                 device=DEVICE,
             )
@@ -238,7 +243,7 @@ def main():
         )
         print(f"Train mAP: {mean_avg_prec}")
 
-        if mean_avg_prec > 0:
+        if mean_avg_prec > 0.1:
             checkpoint_yolo = {
                 "state_dict": model.state_dict(),
                 "optimizer": optimizer.state_dict(),

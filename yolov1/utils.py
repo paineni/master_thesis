@@ -263,7 +263,7 @@ def get_bboxes(
     model.eval()
     train_idx = 0
 
-    for batch_idx, (z, x, labels) in enumerate(loader):
+    for batch_idx, (z, x, labels, w) in enumerate(loader):
         x = x.to(device)
         labels = labels.to(device)
 
@@ -426,8 +426,8 @@ def process_images_with_bboxes(
 
     Args:
     - image_tensor (torch.Tensor): The input image tensor of shape (3, H, W).
-    - predictions (list): A list of predictions, where each prediction is a tuple
-                          (class, probability, x_center, y_center, width, height).
+    - predictions (torch.Tensor): A tensor of predictions with shape (N, 6),
+                                  where each row is (class, probability, x_center, y_center, width, height).
     - output_size (tuple): The desired output size of the cropped images (default is (224, 224)).
     - device (str): The device to perform operations on ('cuda' or 'cpu').
 
@@ -447,6 +447,7 @@ def process_images_with_bboxes(
         class_label, prob, x_center, y_center, box_width, box_height = (
             prediction
         )
+
         if x_center > 0 and y_center > 0 and box_width > 0 and box_height > 0:
             # Calculate bounding box coordinates
             left = int((x_center - box_width / 2) * width)
@@ -476,11 +477,94 @@ def process_images_with_bboxes(
             ).squeeze(0)
 
             cropped_images.append(resized_img)
-            cropped_labels.append(class_label)
+            cropped_labels.append(class_label.item())
 
-            # Convert cropped_labels to a tensor
-            cropped_labels_tensor = torch.tensor(cropped_labels, device=device)
-            return cropped_images, cropped_labels_tensor
+    if cropped_labels:
+        # Convert cropped_labels to a tensor
+        cropped_labels_tensor = torch.tensor(cropped_labels, device=device)
+        return cropped_images, cropped_labels_tensor
+    else:
+        return [], torch.tensor([], device=device)
 
-        else:
-            return None, None
+
+def filter_bboxes(boxes, bboxes2_list, threshold=0.8):
+    # Convert bboxes2 list to a tensor
+    bboxes2 = torch.tensor(
+        bboxes2_list, device=boxes.device
+    )  # Assuming boxes is already a tensor
+
+    # List to store filtered bounding boxes
+    bboxes = []
+
+    for box in boxes:
+        # Expand box to match the shape of bboxes2 for broadcasting
+        expanded_box = box.unsqueeze(0).expand(bboxes2.size(0), -1)
+
+        # Calculate IoU between the current box and all bboxes2
+        iou = calculate_iou(expanded_box, bboxes2)
+
+        # Filter bboxes2 with IoU >= threshold
+        mask = iou >= threshold
+
+        # Select the filtered bboxes2
+        filtered_bboxes2 = bboxes2[mask]
+
+        if len(filtered_bboxes2) > 0:
+            # Replace the class label in filtered_bboxes2 with the class label from the current box
+            filtered_bboxes2[:, 0] = box[0]
+            bboxes.append(filtered_bboxes2)
+
+    if len(bboxes) > 0:
+        # Concatenate all filtered bboxes into a single tensor
+        bboxes = torch.cat(bboxes, dim=0)
+    else:
+        # Create an empty tensor on the same device as bboxes2
+        bboxes = torch.tensor([]).to(bboxes2.device)
+
+    return bboxes
+
+
+def calculate_iou(box1, box2):
+    # box1: [class_label, x, y, w, h] (single box)
+    # box2: [class_label, confidence, x, y, w, h] (multiple boxes)
+
+    # Extract coordinates for box1
+    x1_min, y1_min = (
+        box1[..., 1] - box1[..., 3] / 2,
+        box1[..., 2] - box1[..., 4] / 2,
+    )
+    x1_max, y1_max = (
+        box1[..., 1] + box1[..., 3] / 2,
+        box1[..., 2] + box1[..., 4] / 2,
+    )
+
+    # Extract coordinates for box2
+    x2_min, y2_min = (
+        box2[..., 2] - box2[..., 4] / 2,
+        box2[..., 3] - box2[..., 5] / 2,
+    )
+    x2_max, y2_max = (
+        box2[..., 2] + box2[..., 4] / 2,
+        box2[..., 3] + box2[..., 5] / 2,
+    )
+
+    # Calculate intersection coordinates
+    inter_min_x = torch.max(x1_min, x2_min)
+    inter_min_y = torch.max(y1_min, y2_min)
+    inter_max_x = torch.min(x1_max, x2_max)
+    inter_max_y = torch.min(y1_max, y2_max)
+
+    # Calculate intersection area
+    inter_area = torch.clamp(inter_max_x - inter_min_x, min=0) * torch.clamp(
+        inter_max_y - inter_min_y, min=0
+    )
+
+    # Calculate union area
+    area1 = (x1_max - x1_min) * (y1_max - y1_min)
+    area2 = (x2_max - x2_min) * (y2_max - y2_min)
+    union_area = area1 + area2 - inter_area
+
+    # Calculate IoU
+    iou = inter_area / union_area
+
+    return iou

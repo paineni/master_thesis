@@ -104,8 +104,4 @@ class BeanDataset(torch.utils.data.Dataset):
                 # Set one hot encoding for class_label
                 label_matrix[i, j, class_label] = 1
 
-        return (
-            original_image_tensor,
-            image,
-            label_matrix,
-        )
+        return (original_image_tensor, image, label_matrix, boxes)
