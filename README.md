@@ -1,4 +1,4 @@
-# Master_Thesis (Work in Progress)
+# Master_Thesis 
 # Enhancing Object Detection in Large Images through Efficient Processing and Evaluation
 
 ## 1. Research Area or Field: 
