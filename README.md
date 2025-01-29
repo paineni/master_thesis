@@ -103,6 +103,6 @@ The research employs a **comparative analysis** of three approaches:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/paineni/Master_Thesis.git
+   git clone https://github.com/paineni/master_thesis.git
 
 
